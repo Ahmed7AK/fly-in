@@ -1,0 +1,5 @@
+nb_drones: 3
+start_hub: A 0 0 [max_drones=0]
+end_hub: B 2 0 [max_drones=abc]
+connection: A-B   # inline comment
+
