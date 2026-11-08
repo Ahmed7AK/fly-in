@@ -1,4 +1,4 @@
-*This project has been created as part of the 42 curriculum by <login>.*
+*This project has been created as part of the 42 curriculum by akheiral.*
 
 # Fly-in
 
@@ -31,6 +31,8 @@ make run MAP=maps/hard/some_map.txt  # runs another map
 make debug                           # same as run, inside pdb
 make lint                            # flake8 + mypy (subject flags)
 make lint-strict                     # flake8 + mypy --strict
+make test                            # pytest on every map in maps/
+make bench                           # every map: turns, validation, ratio
 make clean                           # removes caches
 ```
 
@@ -111,12 +113,13 @@ map file -> MapParser -> Network -> DistanceMap -> Scheduler -> Simulation -> vi
 | `flyin/reservations.py` | `ReservationTable` | zone/link usage per turn |
 | `flyin/scheduler.py` | `Scheduler` | time-aware A* per drone |
 | `flyin/simulation.py` | `Simulation` | output lines |
+| `flyin/validator.py` | `Validator` | independent rule checker |
 | `flyin/terminal_view.py`, `flyin/pygame_view.py` | `TerminalView`, `PygameView` | visual output |
 | `flyin/app.py` | `FlyInApp` | CLI and error handling |
 
 A drone's plan is a **timeline**: one `Position` per turn (inside a zone, or
-in transit on a link toward a restricted zone). The output and the
-animation are both derived from these timelines.
+in transit on a link toward a restricted zone). Output, validation and
+animation are all derived from these timelines.
 
 ### 1. Distances to the end (reverse Dijkstra)
 
@@ -174,24 +177,20 @@ usually far less since A* follows the heuristic. Paths are computed once
 before the simulation and never recalculated. Memory: the reservation table
 is O(drones × path length).
 
+### 4. Validation
+
+`Validator` re-checks a finished schedule on its own (it doesn't reuse the
+reservation table): start/end, every move follows a link, no blocked zone,
+restricted moves take exactly two turns and land on time, zone and link
+capacities every turn. `make test` and `make bench` run it on every map.
+
 ### Benchmarks
 
 | Map | Drones | Optimum | Ours |
 |---|---|---|---|
-| easy/01_linear_path | 2 | 4 | 4 |
-| easy/02_simple_fork | 4 | 4 | 4 |
-| easy/03_basic_capacity | 4 | 4 | 4 |
-| medium/01_dead_end_trap | 5 | 8 | 8 |
-| medium/02_circular_loop | 6 | 10 | 10 |
-| medium/03_priority_puzzle | 5 | 6 | 6 |
-| hard/01_maze_nightmare | 8 | 13 | 13 |
-| hard/02_capacity_hell | 12 | 16 | 16 |
-| hard/03_ultimate_challenge | 15 | 26 | 26 |
-| challenger/01_the_impossible_dream | 25 | 43 | 43 |
 | example (subject chapter VI) | 5 | 5 | 5 |
 
-Every map reaches its optimum, and the whole set is planned in well under
-a second.
+Run `make bench` to see every map in `maps/`.
 
 ## Visual representation
 
@@ -208,9 +207,6 @@ plain so the format is exact.
 - each zone shows `drones/capacity`, the start shows how many drones are
   still waiting and the end how many are delivered, so bottlenecks are easy
   to spot;
-- the map is stretched to fill the window, zone sizes follow the gap
-  between the two closest zones, and each name goes below, above or beside
-  its zone, wherever it doesn't overlap anything;
 - links get thicker with their capacity (`x2` label);
 - drones are numbered dots that slide smoothly between turns; a drone flying
   to a restricted zone stops halfway on the link for its in-transit turn;
@@ -235,5 +231,6 @@ Controls: `SPACE` pause, `LEFT/RIGHT` step one turn, `UP/DOWN` speed,
 
 ### AI usage
 
-- I used Claude to break down the project into 
+- I used Claude to break down the project into understoodable parts.
+- I also used for drafting the README.md file.
 
